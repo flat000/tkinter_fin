@@ -50,6 +50,7 @@ def search_code():
     index = result.index #抽出したインデックス
 
     if index == "":
+        # 検索結果がない場合には表示をクリアする
         error1 = ""
         error2 = ""
         error3 = ""
