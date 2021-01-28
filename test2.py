@@ -1,47 +1,242 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import csv
+import os
 import tkinter as tk
-import random
+import tkinter.ttk as ttk
+import tkinter.font as tkFont
+import pandas as pd
 
+def read_subfolder():
+
+    sub_folder = []
+
+    for foldername, subfolders, filenames in os.walk('./'):
+        for subfolder in subfolders:
+            sub_folder.append(subfolder)
+
+    return sub_folder
+
+def read_file(sub_folder):
+    current_folder = './' + sub_folder
+    file_name = []
+
+    for  foldername, subfolders, filenames in os.walk(current_folder):
+        for filename in filenames:
+            file_name.append(filename)
+    
+    return file_name
+
+def cb1_selected(event):
+    var = combo1.get()
+    combo2['value'] = dict_data[var]
+
+def cb2_selected(event):
+    pass
+
+def search_code():
+    # パスを取得
+    path = path_get()
+    
+    data_pd = pd.read_csv(path, dtype=object, encoding=encode_set)
+
+    code = str(ent_keyword1.get())
+
+    # テキストボックスを書き込み可能にモード変更
+    txt_mode_write()
+
+    # テキストボックスをクリア
+    txt_delete()
+
+    result = data_pd[data_pd['エラーコード'].str.contains(code)] #エラーコードの一致抽出
+    index = result.index #抽出したインデックス
+
+    if index == "":
+        error1 = ""
+        error2 = ""
+        error3 = ""
+        error4 = ""
+    else:
+        # 抽出したデータを取り出し、データタイプの関係でバッファに一度取り出してから保存
+        error1 = data_ext(result.loc[index]['エラー名称'])
+        error2 = data_ext(result.loc[index]['エラー内容'])
+        error3 = data_ext(result.loc[index]['対処方法'])
+        error4 = data_ext(result.loc[index]['参考資料'])
+
+    # テキストボックスにエラー内容を挿入
+    txt_insert(error1, error2, error3, error4)
+    txt_mode_read()
+
+def search_name():
+    # パスを取得
+    path = path_get()
+    
+    data_pd = pd.read_csv(path, dtype=object, encoding=encode_set)
+
+    name = str(ent_keyword2.get())
+
+    # テキストボックスを書き込み可能にモード変更
+    txt_mode_write()
+
+    # テキストボックスをクリア
+    txt_delete()
+
+    result = data_pd[data_pd['エラー名称'].str.contains(name)] #エラーコードの一致抽出
+    index = result.index #抽出したインデックス
+
+    # 抽出したデータを取り出し、データタイプの関係でバッファに一度取り出してから保存
+    error1 = data_ext(result.loc[index]['エラー名称'])
+    error2 = data_ext(result.loc[index]['エラー内容'])
+    error3 = data_ext(result.loc[index]['対処方法'])
+    error4 = data_ext(result.loc[index]['参考資料'])
+
+    # テキストボックスにエラー内容を挿入
+    txt_insert(error1, error2, error3, error4)
+    txt_mode_read()
+
+def path_get():
+    # パスを取得
+    var1 = combo1.get()
+    var2 = combo2.get()
+    path = './' + var1 + '/' + var2
+    return path
+
+def data_ext(data):
+    # pandaのSeries型からデータのみを抽出
+    _test = data
+    _test = _test.iloc[0]
+    return _test
+
+def txt_mode_write():
+    # テキストボックスを書き込み可能にモード変更
+    txtBox1.configure(state='normal')
+    txtBox2.configure(state='normal')
+    txtBox3.configure(state='normal')
+    txtBox4.configure(state='normal')
+
+def txt_delete():
+    # テキストボックスをクリア
+    txtBox1.delete("1.0","end")
+    txtBox2.delete("1.0","end")
+    txtBox3.delete("1.0","end")
+    txtBox4.delete("1.0","end")
+
+def txt_mode_read():
+    # テキストボックスをread onlyモード変更
+    txtBox1.configure(state='disabled')
+    txtBox2.configure(state='disabled')
+    txtBox3.configure(state='disabled')
+    txtBox4.configure(state='disabled')
+
+def txt_insert(data1, data2, data3, data4):
+    # データをテキストボックスに挿入
+    txtBox1.insert(tk.END, data1)
+    txtBox2.insert(tk.END, data2)
+    txtBox3.insert(tk.END, data3)
+    txtBox4.insert(tk.END, data4)
+
+def set_utf8():
+    global encode_set
+    encode_set = "utf-8"
+
+def set_sjis():
+    global encode_set
+    encode_set = "shift-jis"
+
+subfolders = read_subfolder()
+dict_data = {}
+
+encode_set="shift-jis"
+
+for subfolder in subfolders:
+    datas = read_file(subfolder)
+    for data in datas:
+        dict_data.setdefault(subfolder, []).append(data)
+
+# Tkクラス生成
 root = tk.Tk()
-root.title("お言葉先生")
-root.geometry("400x200")
+# 画面サイズ
+root.geometry('900x500')
+# 画面タイトル
+root.title('エラー検索')
 
-words = ('ハングリーであれ。愚か者であれ。', 
-'夢は大きく、失敗は大胆に。', 
-'困難の中に、機会がある。',
-'知識とは、天に飛翔するための翼である。',
-'人生は公平ではない。そのことに慣れよう。',
-'重要なことに集中する唯一の方法は「ノー」と言うことだ。',
-'活動的な馬鹿より恐ろしいものはない。',
-'最も大きな危険は勝利の瞬間にある。',
-'輝けるもの必ずしも金ならず。'
-)
+######### 機種名の設定 #########
 
-def outputWords(event): 
+combo1_label = tk.Label(text='機種名称')
+combo1_label.grid(row=1, column=1)
+# コンボボックスの作成(rootに配置,リストの値を編集不可(readonly)に設定)
+combo1 = ttk.Combobox(root, state='readonly', values=list(dict_data.keys()))
+# デフォルトの値をindex=0に設定
+combo1.current()
+# コンボボックスの配置
+combo1.grid(row=1, column=2, sticky='w')
 
-    value = txtBox.get()
-    txtBox.configure(state='normal')
+######### パーツ名の設定 #########
 
-    # 既に文字があれば削除する
-    if value: 
-        txtBox.delete(0, tk.END)
+combo2_label = tk.Label(text='パーツ名称')
+combo2_label.grid(row=2, column=1)
 
-    txtBox.insert(tk.END, random.choice(words))
-    txtBox.configure(state='readonly')
+# コンボボックスの作成(rootに配置,リストの値を編集不可(readonly)に設定)
+combo2 = ttk.Combobox(root, state='readonly')
+# コンボボックスの配置
+combo2.grid(row=2, column=2, sticky='w')
 
-# ラベルを追加
-label = tk.Label(root, text="今のそなたに必要な言葉を授けよう")
-label.pack()
+combo1.bind('<<ComboboxSelected>>', cb1_selected)
+combo2.bind('<<ComboboxSelected>>', cb2_selected)
 
-# テキストボックスを追加
-txtBox = tk.Entry()
-txtBox.configure(state='readonly', width=50)
-txtBox.place(x=55, y=80)
 
-# ボタンの追加
-button = tk.Button(text='さあ、ボタンを押すがよい', width=30)
-button.place(x=90, y=120)
-button.bind('<Button-1>', outputWords)
+######### エラーコード検索ボックスの設定 ##########
+la1 = tk.Button(text='エラーコード検索', command=search_code)
+la1.grid(row=3, column=1, sticky=tk.W)
+keyword1 = tk.StringVar()
+ent_keyword1 = ttk.Entry(justify="left", textvariable=keyword1)
+ent_keyword1.grid(row=3, column=2, sticky='w')
 
-root.mainloop()
+######### エラー名称検索ボックスの設定 ##########
+la2 = tk.Button(text='エラー名称検索', command=search_name)
+la2.grid(row=4, column=1, sticky=tk.W)
+keyword2 = tk.StringVar()
+ent_keyword2 = ttk.Entry(justify="left", textvariable=keyword2)
+ent_keyword2.grid(row=4, column=2, sticky='w')
+
+######### テキスト表示の設定 ##########
+font_size = tkFont.Font(size=16)
+
+error1_label = tk.Label(text='エラー名称')
+error1_label.grid(row=5, column=1)
+txtBox1 = tk.Text()
+txtBox1.configure(state='disabled', font=font_size, width=60, height=1)
+txtBox1.grid(row=5, column=2)
+
+error2_label = tk.Label(text='エラー内容')
+error2_label.grid(row=6, column=1)
+txtBox2 = tk.Text()
+txtBox2.configure(state='disabled', font=font_size, width=60, height=3)
+txtBox2.grid(row=6, column=2)
+    
+error3_label = tk.Label(text='対処方法')
+error3_label.grid(row=7, column=1)
+txtBox3 = tk.Text()
+txtBox3.configure(state='disabled', font=font_size, width=60, height=5)
+txtBox3.grid(row=7, column=2)
+
+error4_label = tk.Label(text='参考資料')
+error4_label.grid(row=8, column=1)
+txtBox4 = tk.Text()
+txtBox4.configure(state='disabled', font=font_size, width=60, height=10)
+txtBox4.grid(row=8, column=2)
+
+# メニューバーを作成(マスターはウィンドウ)
+menubar = tk.Menu(root)
+# メニューを作成(マスターはメニューバー)、tearoff=Falseにして切り取らせないようにする
+menu1 = tk.Menu(menubar, tearoff=False)
+# メニューにアイテムを追加
+menu1.add_command(label="UTF-8", command=set_utf8)
+# セパレーター
+menu1.add_separator()
+menu1.add_command(label="shift-JIS", command=set_sjis)
+#4. メニューバーにメニューをカスケード
+menubar.add_cascade(label="文字コード設定", menu=menu1)
+
+#5. ウィンドウにメニューバーを追加
+root["menu"] = menubar
+
+root.mainloop() # 実行
