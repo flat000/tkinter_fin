@@ -114,8 +114,6 @@ def new_window():
     error3 = data_ext(result.loc[index]['対処方法'])
     error4 = data_ext(result.loc[index]['参考資料'])
 
-    print(error1, error2, error3, error4)
-
     ##########################################################################
     ######### テキスト表示の設定 ##########
     font_size = tkFont.Font(size=16) 
